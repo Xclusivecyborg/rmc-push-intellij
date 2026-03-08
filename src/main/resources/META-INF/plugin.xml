@@ -1,0 +1,38 @@
+<idea-plugin>
+    <id>com.xclusivecyborg.rmc-push</id>
+    <name>Firebase Push</name>
+    <version>0.0.1</version>
+    <vendor email="xclusivecyborg@gmail.com" url="https://github.com/Xclusivecyborg/rmc-push">Xclusivecyborg</vendor>
+
+    <description><![CDATA[
+        Push key-value parameters to Firebase Remote Config directly from your IDE.<br/>
+        Supports STRING, NUMBER, BOOLEAN, and JSON types, with optional parameter group targeting.
+    ]]></description>
+
+    <depends>com.intellij.modules.platform</depends>
+
+    <extensions defaultExtensionNs="com.intellij">
+        <projectService serviceImplementation="com.xclusivecyborg.rmcpush.settings.PluginSettings"/>
+        <projectConfigurable
+            parentId="tools"
+            instance="com.xclusivecyborg.rmcpush.settings.PluginSettingsConfigurable"
+            id="com.xclusivecyborg.rmcpush.settings.PluginSettingsConfigurable"
+            displayName="Firebase Push"/>
+    </extensions>
+
+    <actions>
+        <group id="RmcPush.Menu" text="Firebase Push" popup="true">
+            <add-to-group group-id="ToolsMenu" anchor="last"/>
+            <action
+                id="RmcPush.PushRemoteConfig"
+                class="com.xclusivecyborg.rmcpush.actions.PushRemoteConfigAction"
+                text="Push to Remote Config"
+                description="Push a parameter to Firebase Remote Config"/>
+            <action
+                id="RmcPush.ResetServiceAccount"
+                class="com.xclusivecyborg.rmcpush.actions.ResetServiceAccountAction"
+                text="Reset Service Account"
+                description="Clear the stored service account path for this project"/>
+        </group>
+    </actions>
+</idea-plugin>
