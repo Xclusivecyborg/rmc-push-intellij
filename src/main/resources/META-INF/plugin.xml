@@ -16,7 +16,10 @@
     <depends>com.intellij.modules.platform</depends>
 
     <extensions defaultExtensionNs="com.intellij">
-        <projectService serviceImplementation="com.xclusivecyborg.rmcpush.settings.PluginSettings"/>
+        <!--
+          PluginSettings and RmcPushSession register themselves via @Service;
+          declaring PluginSettings here as well registered it twice.
+        -->
         <projectConfigurable
             parentId="tools"
             instance="com.xclusivecyborg.rmcpush.settings.PluginSettingsConfigurable"

@@ -65,6 +65,15 @@ class RmcPushSession(private val project: Project) : Disposable {
 
     fun refresh() = load("Reloading Remote Config…")
 
+    /**
+     * Reloads without flipping the panel to a spinner first.
+     *
+     * Used after a push, where the editor is showing the result of the write —
+     * a busy state would replace that message with a spinner and then restore
+     * it a moment later.
+     */
+    private fun refreshQuietly() = load(busyMessage = null)
+
     /** Prompts for a service account file and connects to it. */
     fun selectAccount() {
         val descriptor = FileChooserDescriptorFactory.createSingleFileDescriptor("json")
@@ -118,7 +127,7 @@ class RmcPushSession(private val project: Project) : Disposable {
                     onEdt {
                         onResult(null)
                         // Show what Firebase now holds, including this write.
-                        refresh()
+                        refreshQuietly()
                     }
                 } catch (ex: Exception) {
                     onEdt { onResult(ex.message ?: "Unknown error") }
@@ -136,7 +145,8 @@ class RmcPushSession(private val project: Project) : Disposable {
     private fun configuredPath(): String =
         PluginSettings.getInstance(project).state.serviceAccountPath.trim()
 
-    private fun load(busyMessage: String) {
+    /** [busyMessage] of null reloads in the background without a spinner. */
+    private fun load(busyMessage: String?) {
         val path = configuredPath()
         val current = generation.incrementAndGet()
 
@@ -144,7 +154,9 @@ class RmcPushSession(private val project: Project) : Disposable {
             setState(ViewState.NoAccount)
             return
         }
-        setState(ViewState.Busy(busyMessage))
+        if (busyMessage != null) {
+            setState(ViewState.Busy(busyMessage))
+        }
 
         object : Task.Backgroundable(project, "Loading Firebase Remote Config", true) {
             override fun run(indicator: ProgressIndicator) {
