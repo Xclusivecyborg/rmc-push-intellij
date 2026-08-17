@@ -1,0 +1,16 @@
+<!--
+  Marketplace and plugin-manager icon, dark theme. Geometry identical to
+  pluginIcon.svg; only the brace colour differs. See that file for why.
+-->
+<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24">
+  <g fill="none" stroke="#C9CCD6" stroke-width="1.8"
+     stroke-linecap="round" stroke-linejoin="round">
+    <path d="M7.2 3.6 Q4.6 3.6 4.6 6.2 L4.6 9.8 Q4.6 12 2.4 12
+             Q4.6 12 4.6 14.2 L4.6 17.8 Q4.6 20.4 7.2 20.4"/>
+    <path d="M16.8 3.6 Q19.4 3.6 19.4 6.2 L19.4 9.8 Q19.4 12 21.6 12
+             Q19.4 12 19.4 14.2 L19.4 17.8 Q19.4 20.4 16.8 20.4"/>
+  </g>
+  <path fill="#F5A623" fill-rule="evenodd"
+        d="M10.27 4.45 12.31 8.7 14.2 6.34 17.5 13.26 12 19.55 6.5 13.26Z
+           M12 10.27 9.33 13.26h1.73v3.3h1.89v-3.3h1.73Z"/>
+</svg>
