@@ -12,7 +12,7 @@ This plugin is built for developers who want a **fast, safe, and simple** way to
 
 - **Dedicated Tool Window**: Its own icon on the right-hand tool window bar—no menu diving to get back to it.
 - **Browse Your Config**: Lists every existing parameter and parameter group, with type and current value at a glance. Filter by key to find things fast.
-- **Click to Edit**: Open any parameter pre-filled, change the value, and save.
+- **Double-Click to Edit**: Open any parameter pre-filled, change the value, and save.
 - **Direct Push**: Create new parameters, in the root or in any group.
 - **Smart Validation**:
   - **Key Check**: Prevents invalid key formats (only letters, numbers and underscores).
@@ -69,8 +69,14 @@ Before using this plugin, make sure you have:
 
 The path is saved **per project**, so you only do this once.
 
-Prefer the menus? **Tools → Firebase Push → Select Service Account** does the same thing, as does
-**Settings → Tools → Firebase Push**.
+<img src="images/toolwindow-connect.png" alt="The Firebase push icon and Connect service account button" width="260">
+
+
+Everything is also reachable from the menu bar, under **Tools → Firebase Push**:
+
+<img src="images/toolwindow-menu.png" alt="The Tools menu in Android Studio expanded, with the Firebase Push submenu highlighted" width="260">
+
+*The same actions live under Settings → Tools → Firebase Push.*
 
 ---
 
@@ -80,6 +86,14 @@ Prefer the menus? **Tools → Firebase Push → Select Service Account** does th
 2. Double-click any parameter—or select it and press <kbd>Enter</kbd>—to open it
 3. Change the **Value** (and **Type** if needed) and click **Save to Firebase**
 
+<img src="images/toolwindow-browse.png" alt="The Firebase Push tool window listing parameter groups with their counts, one group expanded to show each parameter's type and current value" width="640">
+
+*Every group with its parameter count, and every parameter with its type and current value. Use the filter box to narrow a long list.*
+
+<img src="images/toolwindow-edit.png" alt="The parameter editor open on min_transfer_amount, with the key shown read-only, a Type dropdown, a Value field, the parameter group, and a Save to Firebase button" width="640">
+
+*Opening a parameter fills the form from what Firebase currently holds. **‹ Back** returns to the list.*
+
 > Keys and groups cannot be changed from here—renaming would create a duplicate rather than moving
 > the original. Create a new parameter instead.
 
@@ -88,6 +102,9 @@ Prefer the menus? **Tools → Firebase Push → Select Service Account** does th
 ### Step 4: Create a New Value
 
 1. Click **+ New parameter** at the top of the panel
+
+<img src="images/toolwindow-create.png" alt="The + New parameter button highlighted at the top of the Firebase Push tool window, above the filter box and the list of parameter groups" width="640">
+
 2. Fill in the form:
    - **Key** → e.g. `enable_new_checkout`
    - **Type** → String / Number / Boolean / JSON
