@@ -3,3 +3,6 @@ build/
 .idea/
 *.iml
 out/
+.intellijPlatform/
+local.properties
+.DS_Store
