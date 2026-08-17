@@ -1,0 +1,17 @@
+<!--
+  Tool window stripe icon, light theme. Same flame-and-arrow as the VS Code
+  activity bar icon, so the two IDEs read as one product.
+
+  Sized 13x13 as the platform expects for stripe buttons; the 24-unit viewBox is
+  kept so the geometry stays identical to media/rmc-push.svg in the VS Code
+  repo. The arrow is a second subpath knocked out by fill-rule="evenodd" rather
+  than painted on top, which would need to know the stripe's background colour.
+
+  IntelliJ does not recolour tool window icons, so the fill is the platform's
+  standard light-theme grey and rmcPushToolWindow_dark.svg carries the dark one.
+-->
+<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24">
+  <path fill="#6E6E6E" fill-rule="evenodd"
+        d="M9.8 2.2 12.4 7.6 14.8 4.6 19 13.4 12 21.4 5 13.4Z
+           M12 9.6 8.6 13.4h2.2v4.2h2.4v-4.2h2.2Z"/>
+</svg>

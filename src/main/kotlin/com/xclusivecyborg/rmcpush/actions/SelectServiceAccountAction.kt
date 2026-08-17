@@ -3,19 +3,15 @@ package com.xclusivecyborg.rmcpush.actions
 import com.intellij.openapi.actionSystem.ActionUpdateThread
 import com.intellij.openapi.actionSystem.AnActionEvent
 import com.intellij.openapi.project.DumbAwareAction
+import com.xclusivecyborg.rmcpush.session.RmcPushSession
 import com.xclusivecyborg.rmcpush.ui.RmcPushToolWindowFactory
 
-/**
- * Opens the Firebase Push panel.
- *
- * Pushing used to happen here, through a modal dialog. It now lives in the tool
- * window, so this action only reveals it — the id is kept so existing keymap
- * bindings still land somewhere sensible.
- */
-class PushRemoteConfigAction : DumbAwareAction() {
+/** Picks the service account JSON file, then shows the panel it connected. */
+class SelectServiceAccountAction : DumbAwareAction() {
 
     override fun actionPerformed(e: AnActionEvent) {
         val project = e.project ?: return
+        RmcPushSession.getInstance(project).selectAccount()
         RmcPushToolWindowFactory.activate(project)
     }
 

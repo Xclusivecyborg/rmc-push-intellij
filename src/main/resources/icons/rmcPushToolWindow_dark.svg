@@ -1,0 +1,9 @@
+<!--
+  Tool window stripe icon, dark theme. Geometry identical to
+  rmcPushToolWindow.svg; only the fill differs. See that file for why.
+-->
+<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24">
+  <path fill="#AFB1B3" fill-rule="evenodd"
+        d="M9.8 2.2 12.4 7.6 14.8 4.6 19 13.4 12 21.4 5 13.4Z
+           M12 9.6 8.6 13.4h2.2v4.2h2.4v-4.2h2.2Z"/>
+</svg>

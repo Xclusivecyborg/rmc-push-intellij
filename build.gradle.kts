@@ -8,7 +8,7 @@ plugins {
 }
 
 group = "com.xclusivecyborg"
-version = "0.0.1"
+version = "0.1.0"
 
 repositories {
     mavenCentral()
@@ -19,6 +19,12 @@ repositories {
 
 dependencies {
     implementation("com.google.code.gson:gson:2.10.1")
+
+    // The tests cover pure functions only — template merging, section building
+    // and validation — so they need JUnit and the Kotlin stdlib, but none of the
+    // IntelliJ test fixtures.
+    testImplementation(kotlin("stdlib"))
+    testImplementation("junit:junit:4.13.2")
 
     intellijPlatform {
         // Compile against IntelliJ IDEA Community — the plugin only uses

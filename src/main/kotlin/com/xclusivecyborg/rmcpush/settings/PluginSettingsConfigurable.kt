@@ -5,6 +5,7 @@ import com.intellij.openapi.options.Configurable
 import com.intellij.openapi.project.Project
 import com.intellij.openapi.ui.TextFieldWithBrowseButton
 import com.intellij.ui.dsl.builder.panel
+import com.xclusivecyborg.rmcpush.session.RmcPushSession
 import javax.swing.JComponent
 
 class PluginSettingsConfigurable(private val project: Project) : Configurable {
@@ -35,6 +36,9 @@ class PluginSettingsConfigurable(private val project: Project) : Configurable {
 
     override fun apply() {
         PluginSettings.getInstance(project).state.serviceAccountPath = serviceAccountPathField.text
+        // Pick up the new account immediately — otherwise the tool window keeps
+        // showing whatever the previous one was connected to.
+        RmcPushSession.getInstance(project).connect()
     }
 
     override fun reset() {
