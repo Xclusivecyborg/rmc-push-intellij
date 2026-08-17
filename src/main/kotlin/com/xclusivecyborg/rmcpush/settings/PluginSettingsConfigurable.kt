@@ -3,7 +3,7 @@ package com.xclusivecyborg.rmcpush.settings
 import com.intellij.openapi.fileChooser.FileChooserDescriptorFactory
 import com.intellij.openapi.options.Configurable
 import com.intellij.openapi.project.Project
-import com.intellij.ui.TextFieldWithBrowseButton
+import com.intellij.openapi.ui.TextFieldWithBrowseButton
 import com.intellij.ui.dsl.builder.panel
 import javax.swing.JComponent
 
