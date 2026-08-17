@@ -1,44 +1,76 @@
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+import org.jetbrains.kotlin.gradle.dsl.KotlinVersion
+
 plugins {
     id("java")
-    id("org.jetbrains.kotlin.jvm") version "1.9.25"
-    id("org.jetbrains.intellij") version "1.17.4"
+    id("org.jetbrains.kotlin.jvm") version "2.2.21"
+    id("org.jetbrains.intellij.platform") version "2.18.1"
 }
 
 group = "com.xclusivecyborg"
-version = "0.0.1"
+version = "0.1.0"
 
 repositories {
     mavenCentral()
+    intellijPlatform {
+        defaultRepositories()
+    }
 }
 
 dependencies {
     implementation("com.google.code.gson:gson:2.10.1")
+
+    // The tests cover pure functions only — template merging, section building
+    // and validation — so they need JUnit and the Kotlin stdlib, but none of the
+    // IntelliJ test fixtures.
+    testImplementation(kotlin("stdlib"))
+    testImplementation("junit:junit:4.13.2")
+
+    intellijPlatform {
+        // Compile against IntelliJ IDEA Community — the plugin only uses
+        // com.intellij.modules.platform APIs, so this covers Android Studio too.
+        intellijIdeaCommunity("2024.1")
+    }
 }
 
-intellij {
-    version.set("2024.1")
-    type.set("IC") // IntelliJ IDEA Community — compatible with Android Studio
-    plugins.set(listOf())
+intellijPlatform {
+    pluginConfiguration {
+        ideaVersion {
+            sinceBuild = "241"              // 2024.1 — matches the platform we build against
+            untilBuild = provider { null }  // open-ended — supports all future versions
+        }
+    }
+    signing {
+        certificateChain = providers.environmentVariable("CERTIFICATE_CHAIN")
+        privateKey = providers.environmentVariable("PRIVATE_KEY")
+        password = providers.environmentVariable("PRIVATE_KEY_PASSWORD")
+    }
+    publishing {
+        token = providers.environmentVariable("PUBLISH_TOKEN")
+    }
+}
+
+// Run the plugin inside the locally installed Android Studio:
+//   ./gradlew runAndroidStudio
+// Override the location with -PandroidStudioPath=/path/to/Android Studio.app
+val runAndroidStudio by intellijPlatformTesting.runIde.registering {
+    localPath.set(
+        file(providers.gradleProperty("androidStudioPath").getOrElse("/Applications/Android Studio.app"))
+    )
+}
+
+kotlin {
+    compilerOptions {
+        jvmTarget = JvmTarget.JVM_17
+        // Stay within the Kotlin stdlib bundled by the target IDEs — the plugin
+        // ships no stdlib of its own (see kotlin.stdlib.default.dependency).
+        apiVersion = KotlinVersion.KOTLIN_1_9
+    }
 }
 
 tasks {
     withType<JavaCompile> {
         sourceCompatibility = "17"
         targetCompatibility = "17"
-    }
-    withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
-        kotlinOptions.jvmTarget = "17"
-    }
-    patchPluginXml {
-        sinceBuild.set("231")   // 2023.1
-        untilBuild.set("")      // open-ended — supports all future versions
-    }
-    signPlugin {
-        certificateChain.set(System.getenv("CERTIFICATE_CHAIN"))
-        privateKey.set(System.getenv("PRIVATE_KEY"))
-        password.set(System.getenv("PRIVATE_KEY_PASSWORD"))
-    }
-    publishPlugin {
-        token.set(System.getenv("PUBLISH_TOKEN"))
     }
 }

@@ -1,23 +1,36 @@
 <idea-plugin>
     <id>com.xclusivecyborg.rmc-push</id>
     <name>Firebase Push</name>
-    <version>0.0.1</version>
     <vendor email="xclusivecyborg@gmail.com" url="https://github.com/Xclusivecyborg/rmc-push">Xclusivecyborg</vendor>
 
+    <!-- version, since-build and until-build are patched in by the Gradle build. -->
+
     <description><![CDATA[
-        Push key-value parameters to Firebase Remote Config directly from your IDE.<br/>
-        Supports STRING, NUMBER, BOOLEAN, and JSON types, with optional parameter group targeting.
+        Browse and edit <b>Firebase Remote Config</b> from a docked tool window, without
+        leaving the IDE.<br/><br/>
+        Lists every parameter and parameter group in your project, opens any of them
+        pre-filled for editing, and creates new ones. Supports STRING, NUMBER, BOOLEAN
+        and JSON values, in the root or in any parameter group.
     ]]></description>
 
     <depends>com.intellij.modules.platform</depends>
 
     <extensions defaultExtensionNs="com.intellij">
-        <projectService serviceImplementation="com.xclusivecyborg.rmcpush.settings.PluginSettings"/>
+        <!--
+          PluginSettings and RmcPushSession register themselves via @Service;
+          declaring PluginSettings here as well registered it twice.
+        -->
         <projectConfigurable
             parentId="tools"
             instance="com.xclusivecyborg.rmcpush.settings.PluginSettingsConfigurable"
             id="com.xclusivecyborg.rmcpush.settings.PluginSettingsConfigurable"
             displayName="Firebase Push"/>
+        <!-- id must match RmcPushToolWindowFactory.TOOL_WINDOW_ID -->
+        <toolWindow
+            id="Firebase Push"
+            anchor="right"
+            icon="/icons/rmcPushToolWindow.svg"
+            factoryClass="com.xclusivecyborg.rmcpush.ui.RmcPushToolWindowFactory"/>
     </extensions>
 
     <actions>
@@ -27,7 +40,12 @@
                 id="RmcPush.PushRemoteConfig"
                 class="com.xclusivecyborg.rmcpush.actions.PushRemoteConfigAction"
                 text="Push to Remote Config"
-                description="Push a parameter to Firebase Remote Config"/>
+                description="Open the Firebase Push tool window"/>
+            <action
+                id="RmcPush.SelectServiceAccount"
+                class="com.xclusivecyborg.rmcpush.actions.SelectServiceAccountAction"
+                text="Select Service Account"
+                description="Choose the Firebase service account JSON file for this project"/>
             <action
                 id="RmcPush.ResetServiceAccount"
                 class="com.xclusivecyborg.rmcpush.actions.ResetServiceAccountAction"
