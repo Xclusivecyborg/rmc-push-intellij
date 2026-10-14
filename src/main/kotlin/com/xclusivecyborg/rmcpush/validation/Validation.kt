@@ -1,6 +1,11 @@
 package com.xclusivecyborg.rmcpush.validation
 
-import com.google.gson.JsonParser
+import com.google.gson.Gson
+import com.google.gson.JsonElement
+import com.google.gson.stream.JsonReader
+import com.google.gson.stream.JsonToken
+import com.google.gson.stream.MalformedJsonException
+import java.io.StringReader
 
 /** Parameter keys are read as code identifiers by client SDKs — no spaces. */
 val KEY_REGEX = Regex("^[a-zA-Z0-9_]+$")
@@ -13,6 +18,8 @@ val KEY_REGEX = Regex("^[a-zA-Z0-9_]+$")
 val GROUP_REGEX = Regex("^[a-zA-Z0-9_][a-zA-Z0-9_ -]*$")
 
 val VALUE_TYPES = listOf("STRING", "NUMBER", "BOOLEAN", "JSON")
+
+const val JSON_SHAPE_MESSAGE = "JSON must be an object {…} or an array […]"
 
 enum class Field { KEY, VALUE, GROUP }
 
@@ -46,15 +53,52 @@ fun validatePush(key: String, value: String, valueType: String, group: String?):
         "BOOLEAN" -> if (value.lowercase().trim() !in listOf("true", "false")) {
             return ValidationError(Field.VALUE, "Must be \"true\" or \"false\"")
         }
-        "JSON" -> try {
-            JsonParser.parseString(value)
-        } catch (ex: Exception) {
-            return ValidationError(Field.VALUE, "Invalid JSON: ${ex.message}")
+        "JSON" -> {
+            val parsed = try {
+                parseStrictJson(value)
+            } catch (ex: Exception) {
+                return ValidationError(Field.VALUE, "Invalid JSON: ${ex.message}")
+            }
+            // `false`, `42`, `"hi"` and `null` are complete JSON documents too,
+            // but a JSON parameter holds structured data; a bare value belongs
+            // in a BOOLEAN, NUMBER or STRING parameter instead.
+            if (!parsed.isJsonObject && !parsed.isJsonArray) {
+                return ValidationError(Field.VALUE, JSON_SHAPE_MESSAGE)
+            }
         }
     }
 
     return null
 }
+
+/**
+ * Firebase keys are unique across the whole template, root and groups alike,
+ * so a new parameter may not reuse any key that already exists.
+ */
+fun validateNewKey(key: String, existingKeys: Set<String>): ValidationError? =
+    if (key.trim() in existingKeys) {
+        ValidationError(Field.KEY, "A parameter named \"${key.trim()}\" already exists")
+    } else {
+        null
+    }
+
+/**
+ * Parses [text] as standard JSON, the way the Firebase SDKs will read it.
+ *
+ * Gson's JsonParser is lenient: it accepts `abc`, `{a: 1}` and `['x']`. Firebase
+ * stores the value verbatim, so anything accepted here that is not real JSON
+ * would only fail later, in the app reading the parameter.
+ */
+fun parseStrictJson(text: String): JsonElement {
+    val reader = JsonReader(StringReader(text)) // strict unless told otherwise
+    val element = STRICT.getAdapter(JsonElement::class.java).read(reader)
+    if (reader.peek() != JsonToken.END_DOCUMENT) {
+        throw MalformedJsonException("Unexpected content after the JSON value")
+    }
+    return element
+}
+
+private val STRICT = Gson()
 
 /** Booleans are stored lowercase so the value Firebase holds is canonical. */
 fun normalizeValue(value: String, valueType: String): String =

@@ -79,6 +79,23 @@ class ValidationTest {
     }
 
     @Test
+    fun `JSON is parsed strictly, as the Firebase SDKs will read it`() {
+        // Gson's lenient parser accepts all of these; Firebase clients do not.
+        for (loose in listOf("{a: 1}", "['x']", "abc", "{\"a\": 1} trailing")) {
+            assertEquals(loose, Field.VALUE, error("k", loose, "JSON")?.field)
+        }
+    }
+
+    @Test
+    fun `JSON rejects bare values that parse but are not objects or arrays`() {
+        // Flipping a Boolean parameter to JSON carries its "false" across;
+        // that must not reach Firebase as a JSON parameter.
+        for (bare in listOf("false", "true", "42", "\"hi\"", "null")) {
+            assertEquals(bare, JSON_SHAPE_MESSAGE, error("k", bare, "JSON")?.message)
+        }
+    }
+
+    @Test
     fun `booleans are stored lowercase and trimmed`() {
         assertEquals("true", normalizeValue(" TRUE ", "BOOLEAN"))
         assertEquals("false", normalizeValue("False", "BOOLEAN"))
@@ -88,5 +105,13 @@ class ValidationTest {
     fun `other types are stored exactly as typed`() {
         assertEquals("  Hello  ", normalizeValue("  Hello  ", "STRING"))
         assertEquals("TRUE", normalizeValue("TRUE", "STRING"))
+    }
+
+    @Test
+    fun `a new key may not reuse one that exists anywhere in the template`() {
+        val taken = setOf("welcome_title", "grouped_flag")
+        assertEquals(Field.KEY, validateNewKey("grouped_flag", taken)?.field)
+        assertEquals(Field.KEY, validateNewKey("  welcome_title ", taken)?.field)
+        assertNull(validateNewKey("something_else", taken))
     }
 }
