@@ -2,6 +2,7 @@ package com.xclusivecyborg.rmcpush.firebase
 
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
+import com.xclusivecyborg.rmcpush.model.ParameterChange
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
@@ -156,5 +157,51 @@ class RemoteConfigClientTest {
         assertTrue(body.has("conditions"))
         assertEquals(richTemplate.getAsJsonObject("parameters"), body.getAsJsonObject("parameters"))
         assertEquals(richTemplate.getAsJsonObject("parameterGroups"), body.getAsJsonObject("parameterGroups"))
+    }
+
+    @Test
+    fun `a batch applies every change in one template and keeps the rest`() {
+        val merged = RemoteConfigClient.mergeParameters(
+            richTemplate,
+            listOf(
+                ParameterChange("welcome_title", "Hi", "STRING", null, isNew = false),
+                ParameterChange("brand_new", "true", "BOOLEAN", "Fresh Group", isNew = true)
+            )
+        )
+
+        val root = merged.getAsJsonObject("parameters")
+        val welcome = root.getAsJsonObject("welcome_title")
+        assertEquals("Hi", welcome.getAsJsonObject("defaultValue").get("value").asString)
+        // Untouched fields on an edited parameter survive a batch, as they do a single push.
+        assertEquals(
+            richTemplate.getAsJsonObject("parameters").getAsJsonObject("welcome_title").get("conditionalValues"),
+            welcome.get("conditionalValues")
+        )
+        assertEquals(
+            richTemplate.getAsJsonObject("parameters").getAsJsonObject("untouched_flag"),
+            root.getAsJsonObject("untouched_flag")
+        )
+        assertEquals(
+            "true",
+            merged.getAsJsonObject("parameterGroups").getAsJsonObject("Fresh Group")
+                .getAsJsonObject("parameters").getAsJsonObject("brand_new")
+                .getAsJsonObject("defaultValue").get("value").asString
+        )
+    }
+
+    @Test
+    fun `a batch does not mutate the template it was given`() {
+        val before = richTemplate.deepCopy()
+        RemoteConfigClient.mergeParameters(
+            richTemplate, listOf(ParameterChange("welcome_title", "Changed", "STRING", null, isNew = false))
+        )
+        assertEquals(before, richTemplate)
+    }
+
+    @Test
+    fun `an empty batch returns an equal copy`() {
+        val merged = RemoteConfigClient.mergeParameters(richTemplate, emptyList())
+        assertEquals(richTemplate, merged)
+        assertTrue(merged !== richTemplate)
     }
 }

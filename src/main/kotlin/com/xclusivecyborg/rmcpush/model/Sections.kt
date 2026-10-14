@@ -10,7 +10,8 @@ data class ConfigEntry(
     /** null for a root parameter. */
     val group: String?,
     val conditionCount: Int,
-    val usesInAppDefault: Boolean
+    val usesInAppDefault: Boolean,
+    val description: String? = null
 )
 
 /** Root parameters, or one parameter group. */
@@ -65,7 +66,8 @@ private fun entryOf(key: String, parameter: JsonObject, group: String?): ConfigE
         conditionCount = parameter.objectOrNull("conditionalValues")?.size() ?: 0,
         usesInAppDefault = defaultValue?.get("useInAppDefault")?.let {
             it.isJsonPrimitive && it.asJsonPrimitive.isBoolean && it.asBoolean
-        } ?: false
+        } ?: false,
+        description = parameter.stringOrNull("description")?.takeIf { it.isNotBlank() }
     )
 }
 

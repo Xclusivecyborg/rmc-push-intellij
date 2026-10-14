@@ -4,6 +4,7 @@ import com.google.gson.Gson
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
 import com.google.gson.JsonSyntaxException
+import com.xclusivecyborg.rmcpush.model.ParameterChange
 import java.net.URI
 import java.net.http.HttpClient
 import java.net.http.HttpRequest
@@ -83,6 +84,16 @@ object RemoteConfigClient {
 
         return updated
     }
+
+    /**
+     * Pure function — applies every change in [changes] to a copy of
+     * [template], in order, so a batch lands as one template version: Firebase
+     * either accepts all of it or none of it.
+     */
+    fun mergeParameters(template: JsonObject, changes: List<ParameterChange>): JsonObject =
+        changes.fold(template.deepCopy()) { acc, change ->
+            mergeParameter(acc, change.key, change.value, change.valueType, change.group)
+        }
 
     /**
      * The body to PUT for [template]: everything it holds except the
