@@ -14,10 +14,13 @@ import com.xclusivecyborg.rmcpush.auth.ServiceAccount
 import com.xclusivecyborg.rmcpush.auth.getAccessToken
 import com.xclusivecyborg.rmcpush.auth.readServiceAccount
 import com.xclusivecyborg.rmcpush.firebase.RemoteConfigClient
+import com.xclusivecyborg.rmcpush.model.ParameterChange
 import com.xclusivecyborg.rmcpush.model.ViewState
 import com.xclusivecyborg.rmcpush.model.toSections
 import com.xclusivecyborg.rmcpush.settings.PluginSettings
 import com.xclusivecyborg.rmcpush.validation.normalizeValue
+import com.xclusivecyborg.rmcpush.validation.validatePush
+import org.jetbrains.annotations.TestOnly
 import java.util.concurrent.CopyOnWriteArrayList
 import java.util.concurrent.atomic.AtomicInteger
 
@@ -80,8 +83,9 @@ class RmcPushSession(private val project: Project) : Disposable {
         val chosen = FileChooser.chooseFile(descriptor, project, null) ?: return
 
         PluginSettings.getInstance(project).state.serviceAccountPath = chosen.path
-        // The cached token belongs to the previous account.
+        // The cached token and the batch both belong to the previous account.
         token = null
+        staged.clear()
         connect()
     }
 
@@ -89,23 +93,102 @@ class RmcPushSession(private val project: Project) : Disposable {
     fun clearAccount() {
         PluginSettings.getInstance(project).state.serviceAccountPath = ""
         token = null
+        staged.clear()
         generation.incrementAndGet()
         setState(ViewState.NoAccount)
     }
 
+    // ---------- batch ----------
+
+    /** Changes waiting for a batch push, by key. Touched only on the EDT. */
+    private val staged = LinkedHashMap<String, ParameterChange>()
+
+    fun stagedChanges(): List<ParameterChange> = staged.values.toList()
+
+    fun stagedChange(key: String): ParameterChange? = staged[key]
+
+    /** Adds [change] to the batch, replacing anything already staged for its key. */
+    fun stage(change: ParameterChange) {
+        staged[change.key] = change.copy(value = normalizeValue(change.value, change.valueType))
+        notifyListeners()
+    }
+
     /**
-     * Writes one parameter. [onResult] is called on the EDT with null on
-     * success or a message on failure.
+     * Stages several changes at once — an import, or the batch form. All are
+     * validated before any is staged, so a bad row cannot leave half a batch.
+     * Returns null on success, or why nothing was staged.
      */
-    fun push(key: String, value: String, valueType: String, group: String?, onResult: (String?) -> Unit) {
+    fun stageAll(changes: List<ParameterChange>): String? {
+        for (change in changes) {
+            validatePush(change.key, change.value, change.valueType, change.group)?.let {
+                return "\"${change.key}\": ${it.message}"
+            }
+        }
+        changes.forEach { staged[it.key] = it.copy(value = normalizeValue(it.value, it.valueType)) }
+        notifyListeners()
+        return null
+    }
+
+    fun unstage(key: String) {
+        if (staged.remove(key) != null) notifyListeners()
+    }
+
+    fun discardStaged() {
+        if (staged.isEmpty()) return
+        staged.clear()
+        notifyListeners()
+    }
+
+    /**
+     * Writes one parameter straight away. Anything staged for the same key is
+     * dropped on success — this push supersedes it.
+     */
+    fun push(change: ParameterChange, onResult: (String?) -> Unit) =
+        write(listOf(change), "Pushing to Firebase Remote Config") { failure ->
+            if (failure == null) unstage(change.key)
+            onResult(failure)
+        }
+
+    /**
+     * Writes [changes] (normally everything staged) as one template version.
+     * On success they leave the batch — unless one was re-staged with a
+     * different value while the push was in flight, in which case that newer
+     * edit is kept.
+     */
+    fun pushStaged(changes: List<ParameterChange>, onResult: (String?) -> Unit) {
+        if (changes.isEmpty()) {
+            onResult("Nothing to push.")
+            return
+        }
+        write(changes, "Pushing ${changes.size} Remote Config changes") { failure ->
+            if (failure == null) {
+                changes.forEach { pushed -> if (staged[pushed.key] == pushed) staged.remove(pushed.key) }
+                notifyListeners()
+            }
+            onResult(failure)
+        }
+    }
+
+    /**
+     * Fetches the live template, applies [changes] and PUTs it back once.
+     * [onResult] is called on the EDT with null on success or a message on
+     * failure.
+     */
+    private fun write(changes: List<ParameterChange>, title: String, onResult: (String?) -> Unit) {
         val path = configuredPath()
         if (path.isEmpty()) {
             onResult("No service account selected.")
             return
         }
-        val normalized = normalizeValue(value, valueType)
+        val normalized = changes.map {
+            it.copy(
+                key = it.key.trim(),
+                value = normalizeValue(it.value, it.valueType),
+                group = it.group?.trim()?.takeIf { group -> group.isNotEmpty() }
+            )
+        }
 
-        object : Task.Backgroundable(project, "Pushing to Firebase Remote Config", false) {
+        object : Task.Backgroundable(project, title, false) {
             override fun run(indicator: ProgressIndicator) {
                 try {
                     val account = readServiceAccount(path)
@@ -119,9 +202,7 @@ class RmcPushSession(private val project: Project) : Disposable {
                     val fetched = RemoteConfigClient.fetch(account.project_id, accessToken)
 
                     indicator.text = "Pushing…"
-                    val merged = RemoteConfigClient.mergeParameter(
-                        fetched.json, key.trim(), normalized, valueType, group?.trim()?.takeIf { it.isNotEmpty() }
-                    )
+                    val merged = RemoteConfigClient.mergeParameters(fetched.json, normalized)
                     RemoteConfigClient.push(account.project_id, accessToken, merged, fetched.etag)
 
                     onEdt {
@@ -199,9 +280,19 @@ class RmcPushSession(private val project: Project) : Disposable {
         return fresh.first
     }
 
+    /** Shows [next] without touching Firebase — for the UI smoke test only. */
+    @TestOnly
+    internal fun showForTest(next: ViewState) = setState(next)
+
     private fun setState(next: ViewState) {
         state = next
-        listeners.forEach { it(next) }
+        notifyListeners()
+    }
+
+    /** Re-sends the current state, e.g. after the batch changed. */
+    private fun notifyListeners() {
+        val current = state
+        listeners.forEach { it(current) }
     }
 
     /** Runs on the EDT unless a newer load has already superseded this one. */

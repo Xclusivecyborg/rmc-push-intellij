@@ -1,3 +1,4 @@
+import org.jetbrains.intellij.platform.gradle.TestFrameworkType
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import org.jetbrains.kotlin.gradle.dsl.KotlinVersion
 
@@ -30,6 +31,8 @@ dependencies {
         // Compile against IntelliJ IDEA Community — the plugin only uses
         // com.intellij.modules.platform APIs, so this covers Android Studio too.
         intellijIdeaCommunity("2024.1")
+        // Runs the UI smoke test inside a real (headless) IDE platform.
+        testFramework(TestFrameworkType.Platform)
     }
 }
 
